@@ -20,7 +20,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 class Agent():
     """Interacts with and learns from the environment."""
 
-    def __init__(self, state_size, action_size, seed):
+    def __init__(self, state_size, action_size, n_agents=1, seed=126):
         """Initialize an Agent object.
         
         Params
@@ -31,7 +31,10 @@ class Agent():
         """
         self.state_size = state_size
         self.action_size = action_size
+        self.n_agents = n_agents
         self.seed = random.seed(seed)
+
+        print(device)
 
         # Q-Network
         self.qnetwork_local = QNetwork(state_size, action_size, seed).to(device)
@@ -63,7 +66,8 @@ class Agent():
             state (array_like): current state
             eps (float): epsilon, for epsilon-greedy action selection
         """
-        state = torch.from_numpy(state).float().unsqueeze(0).to(device)
+#         unsqueeze(0)
+        state = torch.from_numpy(state).float().to(device)
         self.qnetwork_local.eval()
         with torch.no_grad():
             action_values = self.qnetwork_local(state)
@@ -77,7 +81,6 @@ class Agent():
 
     def learn(self, experiences, gamma):
         """Update value parameters using given batch of experience tuples.
-
         Params
         ======
             experiences (Tuple[torch.Variable]): tuple of (s, a, r, s', done) tuples 
@@ -103,7 +106,6 @@ class Agent():
     def soft_update(self, local_model, target_model, tau):
         """Soft update model parameters.
         θ_target = τ*θ_local + (1 - τ)*θ_target
-
         Params
         ======
             local_model (PyTorch model): weights will be copied from
@@ -119,7 +121,6 @@ class ReplayBuffer:
 
     def __init__(self, action_size, buffer_size, batch_size, seed):
         """Initialize a ReplayBuffer object.
-
         Params
         ======
             action_size (int): dimension of each action
