@@ -9,15 +9,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 
 BUFFER_SIZE = int(1e6)  # replay buffer size
-BATCH_SIZE = 1024       # minibatch size
-GAMMA = 0.99            # discount factor
-TAU = 1e-3              # for soft update of target parameters
-LR_ACTOR = 1e-4         # learning rate of the actor
-LR_CRITIC = 3e-4        # learning rate of the critic
-WEIGHT_DECAY = 0.0001   # L2 weight decay
-LEAKINESS = 0.01
-ACTOR_HIDDEN_SIZES = [256, 128]
-CRITIC_HIDDEN_SIZES = [256, 256, 128]
+BATCH_SIZE = 64       # minibatch size
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -39,16 +31,13 @@ class MultiAgent():
         random.seed(seed)
         self.n_agents = n_agents
 
-        # Actor Network (w/ Target Network)
-        self.actor_local = Actor(state_size, action_size, hidden_sizes=ACTOR_HIDDEN_SIZES, leak=LEAKINESS, seed=seed).to(device)
-        self.actor_target = Actor(state_size, action_size, hidden_sizes=ACTOR_HIDDEN_SIZES, leak=LEAKINESS, seed=seed).to(device)
-        self.actor_optimizer = optim.Adam(self.actor_local.parameters(), lr=LR_ACTOR)
+        self.actor_local = Actor(state_size, action_size).to(device)
+        self.actor_target = Actor(state_size, action_size).to(device)
+        self.actor_optimizer = optim.Adam(self.actor_local.parameters(), lr=1e-4)
 
-        # Critic Network (w/ Target Network)
-        self.critic_local = Critic(state_size, action_size, hidden_sizes=CRITIC_HIDDEN_SIZES, leak=LEAKINESS, seed=seed).to(device)
-        self.critic_target = Critic(state_size, action_size, hidden_sizes=CRITIC_HIDDEN_SIZES, leak=LEAKINESS, seed=seed).to(device)
-        self.critic_optimizer = optim.Adam(self.critic_local.parameters(), lr=LR_CRITIC)
-        # self.critic_optimizer = optim.Adam(self.critic_local.parameters(), lr=LR_CRITIC, weight_decay=WEIGHT_DECAY)
+        self.critic_local = Critic(state_size, action_size).to(device)
+        self.critic_target = Critic(state_size, action_size).to(device)
+        self.critic_optimizer = optim.Adam(self.critic_local.parameters(), lr=3e-4)
 
         # Noise process
         self.noise = OUNoise(action_size, seed)
@@ -70,7 +59,7 @@ class MultiAgent():
         if (len(self.memory) > BATCH_SIZE) and (self.steps % 20 == 0):
             for _ in range(10):
                 experiences = self.memory.sample()
-                self.learn(experiences, GAMMA)
+                self.learn(experiences, 0.99)
 
     def act(self, states, add_noise=True):
         """ Given a list of states for each agent it returns the actions to be
@@ -105,33 +94,23 @@ class MultiAgent():
             gamma (float): discount factor
         """
         states, actions, rewards, next_states, dones = experiences
-
-        # ---------------------------- update critic ---------------------------- #
-        # Get predicted next-state actions and Q values from target models
         actions_next = self.actor_target(next_states)
         Q_targets_next = self.critic_target(next_states, actions_next)
-        # Compute Q targets for current states (y_i)
         Q_targets = rewards + (gamma * Q_targets_next * (1 - dones))
-        # Compute critic loss
         Q_expected = self.critic_local(states, actions)
         critic_loss = F.mse_loss(Q_expected, Q_targets)
-        # Minimize the loss
         self.critic_optimizer.zero_grad()
         critic_loss.backward()
         self.critic_optimizer.step()
 
-        # ---------------------------- update actor ---------------------------- #
-        # Compute actor loss
         actions_pred = self.actor_local(states)
         actor_loss = -self.critic_local(states, actions_pred).mean()
-        # Minimize the loss
         self.actor_optimizer.zero_grad()
         actor_loss.backward()
         self.actor_optimizer.step()
 
-        # ----------------------- update target networks ----------------------- #
-        self.soft_update(self.critic_local, self.critic_target, TAU)
-        self.soft_update(self.actor_local, self.actor_target, TAU)
+        self.soft_update(self.critic_local, self.critic_target, 1e-3)
+        self.soft_update(self.actor_local, self.actor_target, 1e-3)
 
     def soft_update(self, local_model, target_model, tau):
         """Soft update model parameters.
@@ -183,7 +162,7 @@ class ReplayBuffer:
             batch_size (int): size of each training batch
         """
         self.action_size = action_size
-        self.memory = deque(maxlen=buffer_size)  # internal memory (deque)
+        self.memory = deque(maxlen=buffer_size) 
         self.batch_size = batch_size
         self.experience = namedtuple("Experience", field_names=["state", "action", "reward", "next_state", "done"])
         self.seed = np.random.seed(seed)

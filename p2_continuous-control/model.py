@@ -21,6 +21,7 @@ class Actor(nn.Module):
         torch.nn.init.kaiming_normal_(self.fc2.weight.data, a=0.01, mode='fan_in')
         torch.nn.init.uniform_(self.fc3.weight.data, -3e-3, 3e-3)
 
+       
 
     def forward(self, state):
         x = self.bn0(state)
@@ -50,7 +51,7 @@ class Critic(nn.Module):
 
     def forward(self, state, action):
         state = self.bn0(state)
-        xs = F.relu(self.fcs1(state))
+        xs = F.relu(self.fc1(state))
         x = torch.cat((xs, action), dim=1)
         x = F.relu(self.fc2(x))
         x = self.fc3(x)
