@@ -42,6 +42,18 @@ The Critic network consist of:
 
 Each agent receives its own environment separately. So both agents train simultaneously through self-play. Also ReplayBuffer is used as a shared buffer between agents.
 
+ It is from the paper  [Multi-Agent Actor-Critic for Mixed Cooperative-Competitive Environments](https://arxiv.org/abs/1706.02275), and i started from the hyper parameter mentioned in the paper
+ 
+ ### DDPG Agent Hyper Parameters
+
+-   BUFFER_SIZE (int): replay buffer size `BUFFER_SIZE = int(1e5)`
+-   BATCH_SIZE (int): mini batch size `BATCH_SIZE = 256` then by test i used `240`
+-   GAMMA (float): discount factor `GAMMA = 0.99`
+-   TAU (float): for soft update of target parameters `TAU = 1e-3`
+-   LR_ACTOR (float): learning rate for optimizer `LR_ACTOR = 1e-3` then i changed it to ` 1e-4`
+-   LR_CRITIC (float): learning rate for optimizer `LR_CRITIC = 1e-3` then i changed it to ` 1e-4`
+-   WEIGHT_DECAY (float): L2 weight decay `WEIGHT_DECAY = 0.0`
+
 ### Results
 
 We reached the aimed result after 2900 episodes, with average score:  0.5 for last 100 episodes. 
@@ -55,3 +67,13 @@ environment was usually around 2000.
 #### Learning graph
 Graphs for episodes scores and average scores are as follows:
 ![Plot][plot]
+
+
+### Future Plans for Improvement
+
+I consider continue working on the project in the following axes:
+-   Optimise Hyperparameter 
+Many of the hyperparameters, such as the network architectures (number of layers and neurons), learning rates, batch and buffer sizes, and the level of noise, are took by tests and they could be further tuned to improve performance.
+    
+-   Alternative learning algorithms
+Alternative methods algorithm can be tested, example include PPO with team spirit and the multi-agent DDPG algorithm described that uses centralised training and decentralised execution.
